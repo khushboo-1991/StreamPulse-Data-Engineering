@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPulse - Now Playing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #141414;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Header */
+        .header {
+            background-color: #000000;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #E50914;
+            letter-spacing: 2px;
+        }
+
+        /* Now Playing Section */
+        .now-playing {
+            text-align: center;
+            padding: 60px 40px 40px;
+        }
+
+        .now-playing-badge {
+            background-color: #E50914;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%   { opacity: 1; }
+            50%  { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .content-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .content-meta {
+            font-size: 16px;
+            color: #aaaaaa;
+            margin-bottom: 40px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #aaaaaa;
+        }
+
+        .progress-bar {
+            background-color: #333;
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background-color: #E50914;
+            height: 100%;
+            border-radius: 4px;
+            width: {{ event.completion_pct }}%;
+            transition: width 1s ease;
+        }
+
+        /* Event Details Grid */
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto 40px;
+            padding: 0 40px;
+        }
+
+        .detail-card {
+            background-color: #1f1f1f;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            border-top: 3px solid #E50914;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #aaaaaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .detail-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        /* Pipeline Status */
+        .pipeline-status {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            background-color: #1f1f1f;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .pipeline-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #aaaaaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .pipeline-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .step-icon {
+            font-size: 20px;
+        }
+
+        .step-text {
+            color: #ffffff;
+        }
+
+        .step-status {
+            margin-left: auto;
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        .status-success {
+            background-color: #1a4a1a;
+            color: #4caf50;
+        }
+
+        .status-processing {
+            background-color: #4a3a1a;
+            color: #ff9800;
+        }
+
+        /* Event ID */
+        .event-id {
+            text-align: center;
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 40px;
+        }
+
+        /* Buttons */
+        .button-group {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .watch-again-btn {
+            background-color: #E50914;
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .watch-again-btn:hover {
+            background-color: #f40612;
+        }
+
+        .home-btn {
+            background-color: transparent;
+            color: white;
+            border: 2px solid #ffffff;
+            padding: 14px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .home-btn:hover {
+            background-color: #ffffff;
+            color: #141414;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #000000;
+            padding: 20px 40px;
+            text-align: center;
+            color: #555555;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">🎬 StreamPulse</div>
+    </div>
+
+    <!-- Now Playing -->
+    <div class="now-playing">
+        <div class="now-playing-badge">▶ NOW PLAYING</div>
+        <div class="content-title">{{ event.content_title }}</div>
+        <div class="content-meta">
+            {{ event.content_type }} •
+            {{ event.genre }} •
+            {{ event.language }} •
+            {{ event.subscription_plan }}
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-label">
+                <span>{{ event.watch_duration_mins }} mins watched</span>
+                <span>{{ event.completion_pct }}% complete</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Details -->
+    <div class="details-grid">
+        <div class="detail-card">
+            <div class="detail-label">User</div>
+            <div class="detail-value">{{ event.user_id }}</div>
+        </div>
+        <div class="detail-card">
+            <div class="detail-label">Device</div>
+            <div class="detail-value">{{ event.device_type }}</div>
+        </div>
+        <div class="detail-card">
+            <div class="detail-label">City</div>
+            <div class="detail-value">{{ event.city }}</div>
+        </div>
+        <div class="detail-card">
+            <div class="detail-label">Action</div>
+            <div class="detail-value">{{ event.action }}</div>
+        </div>
+        <div class="detail-card">
+            <div class="detail-label">Prime Time</div>
+            <div class="detail-value">
+                {% if event.is_prime_time == 1 %}
+                    ✅ Yes
+                {% else %}
+                    ❌ No
+                {% endif %}
+            </div>
+        </div>
+        <div class="detail-card">
+            <div class="detail-label">Completed</div>
+            <div class="detail-value">
+                {% if event.is_completed == 1 %}
+                    ✅ Yes
+                {% else %}
+                    ❌ No
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pipeline Status -->
+    <div class="pipeline-status">
+        <div class="pipeline-title">📊 Pipeline Status</div>
+
+        <div class="pipeline-step">
+            <span class="step-icon">🎬</span>
+            <span class="step-text">Watch event generated</span>
+            <span class="step-status status-success">✅ Done</span>
+        </div>
+
+        <div class="pipeline-step">
+            <span class="step-icon">📨</span>
+            <span class="step-text">Sent to Azure Event Hubs</span>
+            <span class="step-status status-success">✅ Done</span>
+        </div>
+
+        <div class="pipeline-step">
+            <span class="step-icon">⚡</span>
+            <span class="step-text">Databricks reading stream</span>
+            <span class="step-status status-processing">🔄 Processing</span>
+        </div>
+
+        <div class="pipeline-step">
+            <span class="step-icon">🥉</span>
+            <span class="step-text">Bronze layer ingestion</span>
+            <span class="step-status status-processing">🔄 Processing</span>
+        </div>
+
+        <div class="pipeline-step">
+            <span class="step-icon">🥈</span>
+            <span class="step-text">Silver layer transformation</span>
+            <span class="step-status status-processing">🔄 Processing</span>
+        </div>
+
+        <div class="pipeline-step">
+            <span class="step-icon">🥇</span>
+            <span class="step-text">Gold layer Star Schema</span>
+            <span class="step-status status-processing">🔄 Processing</span>
+        </div>
+    </div>
+
+    <!-- Event ID -->
+    <div class="event-id">
+        Event ID: {{ event.event_id }}
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-group">
+        <a href="/watch" class="watch-again-btn">▶ Watch Again</a>
+        <a href="/" class="home-btn">🏠 Home</a>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        StreamPulse © 2026 | Built with Azure Databricks |
+        Real-time Data Pipeline
+    </div>
+
+</body>
+</html>

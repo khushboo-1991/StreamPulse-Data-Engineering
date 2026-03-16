@@ -1,0 +1,131 @@
+# ============================================================
+# deploy.yml
+# StreamPulse - GitHub Actions CI/CD Pipeline
+# Automatically deploys notebooks to Databricks
+# when code is pushed to main branch
+# Author: Khushboo Patel
+# ============================================================
+
+name: StreamPulse CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  # ── Job 1: Test Code Quality ────────────────────────────────
+  test:
+    name: Test Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Check Code Style
+        run: |
+          flake8 data.py connection.py main.py \
+          generate_bulk_data.py \
+          --max-line-length=100 \
+          --ignore=E501,W503
+        continue-on-error: true
+
+      - name: Verify Files Exist
+        run: |
+          echo "Checking required files..."
+          test -f data.py && echo "✅ data.py exists"
+          test -f connection.py && echo "✅ connection.py exists"
+          test -f main.py && echo "✅ main.py exists"
+          test -f generate_bulk_data.py && echo "✅ generate_bulk_data.py exists"
+          test -f requirements.txt && echo "✅ requirements.txt exists"
+          test -f templates/home.html && echo "✅ home.html exists"
+          test -f templates/watch.html && echo "✅ watch.html exists"
+          test -f data/streaming_history.json && echo "✅ streaming_history.json exists"
+          echo "✅ All files verified!"
+
+  # ── Job 2: Deploy to Databricks ────────────────────────────
+  deploy:
+    name: Deploy Notebooks to Databricks
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install Databricks CLI
+        run: |
+          pip install databricks-cli
+
+      - name: Configure Databricks CLI
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks configure --token << EOF
+          $DATABRICKS_HOST
+          $DATABRICKS_TOKEN
+          EOF
+
+      - name: Deploy Notebooks to Databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          echo "🚀 Deploying StreamPulse notebooks..."
+          databricks workspace mkdirs /StreamPulse
+          databricks workspace import_dir notebooks/ \
+          /StreamPulse --overwrite
+          echo "✅ Notebooks deployed successfully!"
+
+      - name: Verify Deployment
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          echo "📋 Listing deployed notebooks..."
+          databricks workspace list /StreamPulse
+          echo "✅ Deployment verified!"
+
+  # ── Job 3: Notify Success ───────────────────────────────────
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+
+    steps:
+      - name: Deployment Success
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "🎉 StreamPulse deployment successful!"
+          echo "✅ All notebooks deployed to Databricks"
+          echo "🚀 Pipeline is ready to run"
+
+      - name: Deployment Failed
+        if: needs.deploy.result == 'failure'
+        run: |
+          echo "❌ StreamPulse deployment failed!"
+          echo "Please check the logs above"

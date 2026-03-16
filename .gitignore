@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.json
+!data/streaming_history.json
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
