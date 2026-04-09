@@ -2,8 +2,7 @@
 # deploy.yml
 # StreamPulse - GitHub Actions CI/CD Pipeline
 # Automatically deploys notebooks to Databricks
-# when code is pushed to main branch
-# Author: Khushboo Patel
+# when code is pushed to master branch
 # ============================================================
 
 name: StreamPulse CI/CD Pipeline
@@ -11,10 +10,10 @@ name: StreamPulse CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
 
@@ -35,13 +34,15 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install flake8
 
       - name: Check Code Style
         run: |
-          flake8 data.py connection.py main.py \
-          generate_bulk_data.py \
+          flake8 01_bronze_ingestion.py \
+          02_silver_transformation.py \
+          03_gold_star_schema.py \
+          04_delta_live_tables.py \
+          05_data_quality.py \
           --max-line-length=100 \
           --ignore=E501,W503
         continue-on-error: true
@@ -49,14 +50,11 @@ jobs:
       - name: Verify Files Exist
         run: |
           echo "Checking required files..."
-          test -f data.py && echo "✅ data.py exists"
-          test -f connection.py && echo "✅ connection.py exists"
-          test -f main.py && echo "✅ main.py exists"
-          test -f generate_bulk_data.py && echo "✅ generate_bulk_data.py exists"
-          test -f requirements.txt && echo "✅ requirements.txt exists"
-          test -f templates/home.html && echo "✅ home.html exists"
-          test -f templates/watch.html && echo "✅ watch.html exists"
-          test -f data/streaming_history.json && echo "✅ streaming_history.json exists"
+          test -f 01_bronze_ingestion.py && echo "✅ 01_bronze_ingestion.py exists"
+          test -f 02_silver_transformation.py && echo "✅ 02_silver_transformation.py exists"
+          test -f 03_gold_star_schema.py && echo "✅ 03_gold_star_schema.py exists"
+          test -f 04_delta_live_tables.py && echo "✅ 04_delta_live_tables.py exists"
+          test -f 05_data_quality.py && echo "✅ 05_data_quality.py exists"
           echo "✅ All files verified!"
 
   # ── Job 2: Deploy to Databricks ────────────────────────────
@@ -64,7 +62,7 @@ jobs:
     name: Deploy Notebooks to Databricks
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
 
     steps:
       - name: Checkout Code
@@ -96,8 +94,11 @@ jobs:
         run: |
           echo "🚀 Deploying StreamPulse notebooks..."
           databricks workspace mkdirs /StreamPulse
-          databricks workspace import_dir notebooks/ \
-          /StreamPulse --overwrite
+          databricks workspace import 01_bronze_ingestion.py /StreamPulse/01_bronze_ingestion --language PYTHON --overwrite
+          databricks workspace import 02_silver_transformation.py /StreamPulse/02_silver_transformation --language PYTHON --overwrite
+          databricks workspace import 03_gold_star_schema.py /StreamPulse/03_gold_star_schema --language PYTHON --overwrite
+          databricks workspace import 04_delta_live_tables.py /StreamPulse/04_delta_live_tables --language PYTHON --overwrite
+          databricks workspace import 05_data_quality.py /StreamPulse/05_data_quality --language PYTHON --overwrite
           echo "✅ Notebooks deployed successfully!"
 
       - name: Verify Deployment
@@ -123,6 +124,7 @@ jobs:
           echo "🎉 StreamPulse deployment successful!"
           echo "✅ All notebooks deployed to Databricks"
           echo "🚀 Pipeline is ready to run"
+          echo "Pipeline: Bronze → Silver → Gold → DLT → ADF"
 
       - name: Deployment Failed
         if: needs.deploy.result == 'failure'
