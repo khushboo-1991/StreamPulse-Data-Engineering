@@ -95,17 +95,16 @@ StreamPulse-Data-Engineering/
 ├── data/
 │   └── streaming_history.json  1000 historical records
 │
-├── notebooks/
-│   ├── 01_bronze_ingestion.py  Raw data ingestion
-│   ├── 02_silver_transformation.py  Data cleaning
-│   ├── 03_gold_star_schema.py  Star Schema creation
-│   ├── 04_delta_live_tables.py DLT pipeline
-│   └── 05_data_quality.py      Quality checks
+├── screenshots/
+│   ├── Databricks_Workspace_5.jpg
+│   ├── The_Data_Lineage__Databricks_DLT_.jpg
+│   └── The_Orchestration_Masterpiece__ADF_.jpg
 │
-├── templates/
-│   ├── home.html               StreamPulse home page
-│   └── watch.html              Now playing page
-│
+├── 01_bronze_ingestion.py      Raw data ingestion
+├── 02_silver_transformation.py Data cleaning
+├── 03_gold_star_schema.py      Star Schema creation
+├── 04_delta_live_tables.py     DLT pipeline
+├── 05_data_quality.py          Quality checks
 ├── connection.py               Azure Event Hubs connection
 ├── data.py                     Watch event generator
 ├── generate_bulk_data.py       Bulk data generator
@@ -184,9 +183,47 @@ is_weekend
 
 ---
 
+## ⚡ Delta Live Tables Pipeline
+
+**Pipeline:** `StreamPulse_DLT`  
+**Schema:** `streampulse_databricks.streampulse_dlt`  
+**Status:** ✅ Completed in **38 seconds**
+
+| Table | Rows | Type |
+|-------|------|------|
+| silver_watch_obt | 1,000 | Source |
+| dim_content | 1,030 | Dimension |
+| dim_users | 3,988 | Dimension |
+| dim_devices | 1,000 | Dimension |
+| dim_locations | 1,024 | Dimension |
+| dim_date | 1,000 | Dimension |
+| fact_watch_events | 4,000 | Fact |
+| gold_content_performance | 1,010 | Gold Agg |
+| gold_user_engagement | 2,004 | Gold Agg |
+| gold_device_analytics | 2,001 | Gold Agg |
+| gold_revenue_summary | 2,004 | Gold Agg |
+| gold_hourly_pulse | 1,000 | Gold Agg |
+| gold_trending_content | 10 | Gold Agg |
+| **Total** | **13 tables** | |
+
+---
+
+## 🔄 ADF Pipeline — Orchestration
+
+**Pipeline:** `StreamPulse_Pipeline`  
+**Factory:** `StreamPulse-adf`  
+**Status:** ✅ All activities Succeeded
+
+```
+Bronze_Ingestion ──► Silver_Transformation ──► Gold_Star_Schema
+    ✅ 38s                  ✅ 36s                   ✅ 40s
+```
+
+---
+
 ## 🔄 CI/CD Pipeline
 
-Every push to `main` branch automatically:
+Every push to `master` branch automatically:
 ```
 Push to GitHub
         ↓
@@ -205,37 +242,37 @@ Job 3: Verify deployment
 
 ## 🎯 Key Features
 
-**Real-time Streaming**
+**Real-time Streaming**  
 Live watch events flow from FastAPI app through
 Azure Event Hubs into Databricks streaming pipeline.
 
-**Dual Ingestion**
+**Dual Ingestion**  
 Handles both bulk historical data and live streaming
 events — combining them in Bronze layer.
 
-**Medallion Architecture**
+**Medallion Architecture**  
 Bronze → Silver → Gold with increasing data quality
 and decreasing data volume at each layer.
 
-**Star Schema Modeling**
+**Star Schema Modeling**  
 Production-grade dimensional model with 1 fact table
 and 5 dimension tables built using Delta Live Tables.
 
-**Data Quality**
+**Data Quality**  
 Automated quality checks across all layers including
 referential integrity validation.
 
-**Dynamic SQL**
+**Dynamic SQL**  
 9 analytical reports generated from 4 Jinja templates
 and metadata config — no SQL repetition.
 
-**Security**
+**Security**  
 All secrets managed through Azure Key Vault.
 No credentials in code or GitHub.
 
-**CI/CD**
+**CI/CD**  
 Notebooks automatically deployed to Databricks
-on every GitHub push.
+on every GitHub push to master.
 
 ---
 
@@ -315,9 +352,19 @@ ORDER BY views DESC
 
 ---
 
+## 📸 Screenshots
+
+| Component | Screenshot |
+|-----------|-----------|
+| Databricks Workspace | ![Workspace](screenshots/Databricks_Workspace_5.jpg) |
+| DLT Pipeline — Data Lineage | ![DLT](screenshots/The_Data_Lineage__Databricks_DLT_.jpg) |
+| ADF Pipeline — All Succeeded | ![ADF](screenshots/The_Orchestration_Masterpiece__ADF_.jpg) |
+
+---
+
 ## 🔗 Related Projects
 
-- [APAC Streaming Strategy Analytics](https://github.com/khushboo-1991/apac-streaming-strategy-analytics)
+- [APAC Streaming Strategy Analytics](https://github.com/khushboo-1991/apac-streaming-strategy-analytics)  
   SQL and Python analysis of Netflix, Amazon Prime
   and JioHotstar competitive positioning in India.
 
@@ -330,8 +377,12 @@ end-to-end Azure data engineering skills including
 real-time streaming, medallion architecture,
 Star Schema modeling, and modern DevOps practices.
 
-**Skills demonstrated:**
+**Skills demonstrated:**  
 PySpark • Delta Lake • Azure Databricks •
 Azure Event Hubs • Azure Data Factory •
 Delta Live Tables • GitHub Actions •
 Jinja Templates • FastAPI • Star Schema
+
+---
+
+*Built with ❤️ by Khushboo Patel — April 2026*
